@@ -1,0 +1,8 @@
+How it works:
+  
+fmt.Scan(&temp) reads the temperature number
+fmt.Scan(&unit) reads the unit string
+It converts unit to uppercase to avoid case sensitivity
+If unit is "C", converts Celsius to Fahrenheit: F = (C * 9/5) + 32
+If unit is "F", converts Fahrenheit to Celsius: C = (F - 32) * 5/9
+Prints result with 2 decimals
