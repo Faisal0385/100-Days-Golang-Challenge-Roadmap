@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List with Timer Counter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .timer-overdue {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container my-5">
+        <h1 class="text-center mb-4">Todo List</h1>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <canvas id="taskHistoryChart" class="mb-4" height="150"></canvas>
+                <!-- Status Alerts in Single Row -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="alert alert-primary d-flex justify-content-between align-items-center" role="alert">
+                            <span>In Progress</span>
+                            <span id="inProgressCount" class="badge bg-dark">0</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-success d-flex justify-content-between align-items-center" role="alert">
+                            <span>Finished</span>
+                            <span id="finishedCount" class="badge bg-dark">0</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-warning d-flex justify-content-between align-items-center" role="alert">
+                            <span>Pending</span>
+                            <span id="pendingCount" class="badge bg-dark">3</span>
+                        </div>
+                    </div>
+                </div>
+                <form id="todoForm" class="mb-4">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" id="todoInput" placeholder="Add a new task" required>
+                        <button type="submit" class="btn btn-primary">Add Task</button>
+                    </div>
+                    <select class="form-select mb-2" id="priorityInput">
+                        <option value="low" selected>Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <div class="row mb-2">
+                        <div class="col-md-12">
+                            <input type="date" class="form-control mb-2" id="dueDateInput" value="2025-08-10">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-12">
+                            <div class="d-flex align-items-center mb-1">
+                                <input type="checkbox" class="form-check-input me-2" id="enableTimeInput" checked>
+                                <label class="form-check-label me-2" for="enableTimeInput">Set Time</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <input type="time" class="form-control mb-2" id="dueTimeInput" value="12:00">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mb-3 d-flex justify-content-between border align-items-center rounded p-2">
+            <h4 class="mb-0">ToDo List</h4>
+            <button class="btn btn-info btn-sm" id="viewHistoryBtn" data-bs-toggle="modal"
+                data-bs-target="#historyModal">View History</button>
+        </div>
+
+        <div class="mb-3">
+            <div class="btn-group" role="group" aria-label="Filter tasks by status">
+                <button type="button" class="btn btn-outline-primary active" data-filter="all">All</button>
+                <button type="button" class="btn btn-outline-primary" data-filter="pending">Pending</button>
+                <button type="button" class="btn btn-outline-primary" data-filter="in-progress">In Progress</button>
+                <button type="button" class="btn btn-outline-primary" data-filter="finished">Finished</button>
+            </div>
+        </div>
+        <div class="mb-3">
+            <div class="progress" role="progressbar" aria-label="Task completion progress" aria-valuenow="0"
+                aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-success" id="progressBar" style="width: 0%">
+                    <span id="progressLabel">0%</span>
+                </div>
+            </div>
+        </div>
+        <div id="todoList"></div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="historyModalLabel">Task History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Tasks Added</th>
+                                <th>Tasks Finished</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTaskModalLabel">Edit Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editTaskForm">
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="editTodoInput" placeholder="Edit task" required>
+                        </div>
+                        <select class="form-select mb-2" id="editPriorityInput">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <input type="date" class="form-control mb-2" id="editDueDateInput">
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <div class="d-flex align-items-center mb-1">
+                                    <input type="checkbox" class="form-check-input me-2" id="editEnableTimeInput">
+                                    <label class="form-check-label me-2" for="editEnableTimeInput">Set Time</label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <input type="time" class="form-control mb-2" id="editDueTimeInput" disabled>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container at Bottom-Right -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+            <div class="toast-body bg-success"></div>
+        </div>
+        <div id="dangerToast" class="toast text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+            <div class="toast-body bg-danger"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        fetch('http://localhost:8080/tasks')
+            .then(res => res.json())
+            .then(tasks => {
+                const container = document.getElementById('todoList');
+                container.innerHTML = ''; // Clear existing content
+
+                tasks.forEach(task => {
+                    const card = document.createElement('div');
+                    card.className = 'card shadow-sm mb-3';
+
+                    card.innerHTML = `
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <select class="form-select form-select-sm status-select" style="width: 120px;">
+                            <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="in progress" ${task.status === 'in progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="finished" ${task.status === 'finished' ? 'selected' : ''}>Finished</option>
+                            <option value="cancelled" ${task.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                            </select>
+                            <span class="ms-2 in-progress-indicator" style="display: ${task.status === 'in progress' ? 'inline' : 'none'};">
+                            <i class="bi bi-hourglass-split text-primary"></i>
+                            </span>
+                            <span class="ms-2 finished-indicator" style="display: ${task.status === 'finished' ? 'inline' : 'none'};">
+                            <i class="bi bi-check-circle text-success"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-warning me-2 edit-btn">
+                            <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-btn">
+                            <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        </div>
+                        <div class="card-body d-flex align-items-center">
+                        <span>${task.task}</span>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="badge bg-${priorityBadgeColor(task.priority)}">${capitalize(task.priority)}</span>
+                        <div class="text-end">
+                            <span class="text-muted fw-bold">
+                            <i>Due Date:</i> ${task.due_date ? task.due_date.split('T')[0] : '-'} <br />
+                            <i>By Time:</i> ${task.due_time || '-'}
+                            </span>
+                            <small class="d-block timer-counter"></small>
+                        </div>
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+            })
+            .catch(err => console.error('Error fetching tasks:', err));
+
+        // Helper to get bootstrap badge color by priority
+        function priorityBadgeColor(priority) {
+            switch (priority) {
+                case 'low': return 'success';
+                case 'medium': return 'warning';
+                case 'high': return 'danger';
+                default: return 'secondary';
+            }
+        }
+
+        // Helper to capitalize first letter
+        function capitalize(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    </script>
+
+    <script>
+        document.getElementById('todoForm').addEventListener('submit', async function (e) {
+            e.preventDefault(); // prevent page reload
+
+            // Get values from inputs
+            const task = document.getElementById('todoInput').value.trim();
+            const priority = document.getElementById('priorityInput').value;
+            const dueDate = document.getElementById('dueDateInput').value;
+            const enableTime = document.getElementById('enableTimeInput').checked;
+            const dueTime = enableTime ? document.getElementById('dueTimeInput').value : '';
+
+            if (!task) {
+                alert('Please enter a task.');
+                return;
+            }
+
+            // Build the payload matching your Go struct
+            const payload = {
+                task: task,
+                priority: priority,
+                due_date: dueDate ? new Date(dueDate).toISOString() : null,
+                due_time: dueTime,
+                status: 'pending' // default status
+            };
+
+            try {
+                const response = await fetch('http://localhost:8080/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    alert('Error: ' + (errorData.error || 'Failed to add task'));
+                    return;
+                }
+
+                const createdTask = await response.json();
+                console.log('Task created:', createdTask);
+
+                // Optionally reset the form
+                this.reset();
+
+                // Optionally update the UI to show the new task
+                // For example, you could call a function to reload the tasks list
+
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        });
+    </script>
+
+
+
+    <!-- <script>
+        // Initialize Bootstrap Toasts
+        const successToastEl = document.getElementById('successToast');
+        const dangerToastEl = document.getElementById('dangerToast');
+        const successToast = new bootstrap.Toast(successToastEl, { delay: 3000 });
+        const dangerToast = new bootstrap.Toast(dangerToastEl, { delay: 3000 });
+
+        // Initialize Bootstrap Edit Modal
+        const editTaskModalEl = document.getElementById('editTaskModal');
+        const editTaskModal = new bootstrap.Modal(editTaskModalEl);
+
+        // Function to show toast with a message and type
+        function showToast(message, type) {
+            const toast = type === 'success' ? successToast : dangerToast;
+            const toastEl = type === 'success' ? successToastEl : dangerToastEl;
+            toastEl.querySelector('.toast-body').textContent = message;
+            toast.show();
+        }
+
+        // Function to get badge class based on priority
+        function getPriorityBadgeClass(priority) {
+            switch (priority) {
+                case 'high': return 'bg-danger';
+                case 'medium': return 'bg-warning';
+                case 'low': return 'bg-success';
+                default: return 'bg-success';
+            }
+        }
+
+        // Initialize history with dummy data if none exists
+        let history = JSON.parse(localStorage.getItem('taskHistory')) || [
+            { date: '2025-08-04', type: 'add' }, { date: '2025-08-04', type: 'add' }, { date: '2025-08-04', type: 'add' }, { date: '2025-08-04', type: 'finish' },
+            { date: '2025-08-05', type: 'add' }, { date: '2025-08-05', type: 'add' },
+            { date: '2025-08-06', type: 'add' }, { date: '2025-08-06', type: 'add' }, { date: '2025-08-06', type: 'add' }, { date: '2025-08-06', type: 'add' }, { date: '2025-08-06', type: 'finish' }, { date: '2025-08-06', type: 'finish' },
+            { date: '2025-08-07', type: 'add' }, { date: '2025-08-07', type: 'finish' },
+            { date: '2025-08-08', type: 'add' }, { date: '2025-08-08', type: 'add' }, { date: '2025-08-08', type: 'finish' },
+            { date: '2025-08-09', type: 'finish' },
+            { date: '2025-08-10', type: 'add' }, { date: '2025-08-10', type: 'add' }, { date: '2025-08-10', type: 'add' }
+        ];
+
+        function saveHistory() {
+            localStorage.setItem('taskHistory', JSON.stringify(history));
+        }
+
+        // Function to display history in modal
+        function displayHistory() {
+            const today = new Date(2025, 7, 10); // Month is 0-indexed
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                dates.push(d.toISOString().slice(0, 10));
+            }
+
+            const tableBody = document.getElementById('historyTableBody');
+            tableBody.innerHTML = '';
+            dates.forEach(date => {
+                const addCount = history.filter(h => h.date === date && h.type === 'add').length;
+                const finishCount = history.filter(h => h.date === date && h.type === 'finish').length;
+                const row = `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${addCount}</td>
+                        <td>${finishCount}</td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        // Function to convert 24-hour time to 12-hour format with AM/PM
+        function convertTo12Hour(time) {
+            if (!time) return '';
+            const [hours, minutes] = time.split(':').map(Number);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const adjustedHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+            return `${adjustedHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+        }
+
+        // Function to parse 12-hour time back to 24-hour format for editing
+        function parse12HourTo24Hour(timeStr) {
+            if (!timeStr) return '';
+            const [time, period] = timeStr.split(' ');
+            let [hours, minutes] = time.split(':').map(Number);
+            if (period === 'PM' && hours !== 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        // Function to format due date and time
+        function formatDueDateTime(date, time) {
+            return time ? `<i>Due Date:</i> ${date} <br/> <i>By Time:</i> ${convertTo12Hour(time)}` : `<i>Due Date:</i> ${date}`;
+        }
+
+        // Function to calculate countdown
+        function calculateCountdown(dueDateStr, dueTimeStr) {
+            const dueDate = new Date(`${dueDateStr}T${dueTimeStr || '00:00'}`);
+            const now = new Date();
+            const diff = dueDate - now;
+            if (diff <= 0) {
+                return 'Overdue';
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            return `${days}d ${hours}h ${minutes}m left`;
+        }
+
+        // Function to update timers for all tasks
+        function updateTimers() {
+            document.querySelectorAll('#todoList .card').forEach(task => {
+                const dueText = task.querySelector('.card-footer span.text-muted').innerHTML;
+                const match = dueText.match(/<i>Due Date:<\/i> (\d{4}-\d{2}-\d{2})(?: <br\/> <i>By Time:<\/i> (\d{1,2}:\d{2} [AP]M))?/);
+                if (match) {
+                    const dueDate = match[1];
+                    const dueTime = match[2] ? parse12HourTo24Hour(match[2]) : '';
+                    const countdown = calculateCountdown(dueDate, dueTime);
+                    const timerEl = task.querySelector('.timer-counter');
+                    timerEl.textContent = countdown;
+                    if (countdown === 'Overdue') {
+                        timerEl.classList.add('timer-overdue');
+                    } else {
+                        timerEl.classList.remove('timer-overdue');
+                    }
+                }
+            });
+        }
+
+        // Function to filter tasks by status
+        let currentFilter = 'all';
+        function filterTasks(status) {
+            currentFilter = status;
+            const tasks = document.querySelectorAll('#todoList .card');
+            tasks.forEach(task => {
+                const taskStatus = task.querySelector('.status-select').value;
+                if (status === 'all' || taskStatus === status) {
+                    task.style.display = '';
+                } else {
+                    task.style.display = 'none';
+                }
+            });
+            updateTaskCounts();
+        }
+
+        // Function to update task counts, visuals, and progress bar
+        function updateTaskCounts() {
+            const tasks = document.querySelectorAll('#todoList .card');
+            let inProgressCount = 0;
+            let finishedCount = 0;
+            let pendingCount = 0;
+            let totalVisibleTasks = 0;
+
+            tasks.forEach(task => {
+                const status = task.querySelector('.status-select').value;
+                const inProgressIndicator = task.querySelector('.in-progress-indicator');
+                const finishedIndicator = task.querySelector('.finished-indicator');
+                const title = task.querySelector('.card-body span');
+
+                // Update In Progress visuals
+                if (status === 'in-progress') {
+                    inProgressIndicator.style.display = 'inline';
+                    task.classList.add('bg-light', 'text-primary');
+                    if (task.style.display !== 'none') inProgressCount++;
+                } else {
+                    inProgressIndicator.style.display = 'none';
+                    task.classList.remove('bg-light', 'text-primary');
+                }
+
+                // Update Finished visuals
+                if (status === 'finished') {
+                    finishedIndicator.style.display = 'inline';
+                    title.style.textDecoration = 'line-through';
+                    if (task.style.display !== 'none') finishedCount++;
+                } else {
+                    finishedIndicator.style.display = 'none';
+                    title.style.textDecoration = 'none';
+                }
+
+                if (status === 'pending' && task.style.display !== 'none') {
+                    pendingCount++;
+                }
+
+                if (task.style.display !== 'none') totalVisibleTasks++;
+            });
+
+            document.getElementById('inProgressCount').textContent = inProgressCount;
+            document.getElementById('finishedCount').textContent = finishedCount;
+            document.getElementById('pendingCount').textContent = pendingCount;
+
+            // Update progress bar
+            const progressBar = document.getElementById('progressBar');
+            const progressLabel = document.getElementById('progressLabel');
+            const percentage = totalVisibleTasks > 0 ? ((finishedCount / totalVisibleTasks) * 100).toFixed(1) : 0;
+            progressBar.style.width = `${percentage}%`;
+            progressBar.setAttribute('aria-valuenow', percentage);
+            progressLabel.textContent = `${percentage}%`;
+        }
+
+        // Function to update bar chart
+        function updateChart() {
+            const today = new Date(2025, 7, 10); // Month is 0-indexed
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                dates.push(d.toISOString().slice(0, 10));
+            }
+
+            const addCounts = dates.map(d => history.filter(h => h.date === d && h.type === 'add').length);
+            const finishCounts = dates.map(d => history.filter(h => h.date === d && h.type === 'finish').length);
+
+            const ctx = document.getElementById('taskHistoryChart').getContext('2d');
+            if (window.taskChart) {
+                window.taskChart.destroy();
+            }
+            window.taskChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Tasks Added',
+                            data: addCounts,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Tasks Finished',
+                            data: finishCounts,
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Tasks'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Handle checkbox for enabling/disabling time input in add form
+        const enableTimeInput = document.getElementById('enableTimeInput');
+        const dueTimeInput = document.getElementById('dueTimeInput');
+        enableTimeInput.addEventListener('change', function () {
+            dueTimeInput.disabled = !this.checked;
+            if (!this.checked) {
+                dueTimeInput.value = '';
+            } else {
+                dueTimeInput.value = '12:00';
+            }
+        });
+
+        // Handle checkbox for enabling/disabling time input in edit modal
+        const editEnableTimeInput = document.getElementById('editEnableTimeInput');
+        const editDueTimeInput = document.getElementById('editDueTimeInput');
+        editEnableTimeInput.addEventListener('change', function () {
+            editDueTimeInput.disabled = !this.checked;
+            if (!this.checked) {
+                editDueTimeInput.value = '';
+            } else if (!editDueTimeInput.value) {
+                editDueTimeInput.value = '12:00';
+            }
+        });
+
+        // Handle filter buttons
+        document.querySelectorAll('.btn-group button').forEach(button => {
+            button.addEventListener('click', function () {
+                document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                filterTasks(this.dataset.filter);
+            });
+        });
+
+        // Handle view history button
+        document.getElementById('viewHistoryBtn').addEventListener('click', function () {
+            displayHistory();
+        });
+
+        // Handle form submission to add new tasks
+        document.getElementById('todoForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const todoInput = document.getElementById('todoInput');
+            const priorityInput = document.getElementById('priorityInput');
+            const dueDateInput = document.getElementById('dueDateInput');
+            const dueTimeInput = document.getElementById('dueTimeInput');
+            const enableTimeInput = document.getElementById('enableTimeInput');
+            const taskText = todoInput.value.trim();
+            const priority = priorityInput.value;
+            const dueDate = dueDateInput.value || '2025-08-10';
+            const dueTime = enableTimeInput.checked ? dueTimeInput.value || '' : '';
+            if (taskText) {
+                const div = document.createElement('div');
+                div.className = 'card shadow-sm mb-3';
+                div.innerHTML = `
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <select class="form-select form-select-sm status-select" style="width: 120px;">
+                                <option value="pending" selected>Pending</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="finished">Finished</option>
+                            </select>
+                            <span class="ms-2 in-progress-indicator" style="display: none;">
+                                <i class="bi bi-hourglass-split text-primary"></i>
+                            </span>
+                            <span class="ms-2 finished-indicator" style="display: none;">
+                                <i class="bi bi-check-circle text-success"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-warning me-2 edit-btn">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-btn">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex align-items-center">
+                        <span>${taskText}</span>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="badge ${getPriorityBadgeClass(priority)}">${priority.charAt(0).toUpperCase() + priority.slice(1)}</span>
+                        <div class="text-end">
+                            <span class="text-muted fw-bold">${formatDueDateTime(dueDate, dueTime)}</span>
+                            <small class="d-block timer-counter"></small>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('todoList').appendChild(div);
+                todoInput.value = '';
+                priorityInput.value = 'low';
+                dueDateInput.value = '2025-08-10';
+                dueTimeInput.value = '12:00';
+                enableTimeInput.checked = true;
+                dueTimeInput.disabled = false;
+
+                // Log add to history
+                history.push({ date: '2025-08-10', type: 'add' });
+                saveHistory();
+                showToast('Task added successfully!', 'success');
+                updateTaskCounts();
+                updateChart();
+                updateTimers();
+                filterTasks(currentFilter);
+
+                // Add event listeners for new buttons
+                const select = div.querySelector('.status-select');
+                select.dataset.previous = 'pending';
+                div.querySelector('.edit-btn').addEventListener('click', function () {
+                    const card = this.closest('.card');
+                    const taskSpan = card.querySelector('.card-body span');
+                    const currentPriority = card.querySelector('.card-footer span.badge').textContent.toLowerCase();
+                    const currentDueText = card.querySelector('.card-footer span.text-muted').innerHTML;
+                    const match = currentDueText.match(/<i>Due Date:<\/i> (\d{4}-\d{2}-\d{2})(?: <br\/> <i>By Time:<\/i> (\d{1,2}:\d{2} [AP]M))?/);
+                    const currentDueDate = match[1];
+                    const currentDueTime = match[2] ? parse12HourTo24Hour(match[2]) : '';
+
+                    // Populate modal fields
+                    document.getElementById('editTodoInput').value = taskSpan.textContent;
+                    document.getElementById('editPriorityInput').value = currentPriority;
+                    document.getElementById('editDueDateInput').value = currentDueDate;
+                    document.getElementById('editEnableTimeInput').checked = !!currentDueTime;
+                    document.getElementById('editDueTimeInput').value = currentDueTime || '';
+                    document.getElementById('editDueTimeInput').disabled = !currentDueTime;
+
+                    // Store reference to the card being edited
+                    editTaskModalEl.dataset.card = card;
+
+                    // Show the modal
+                    editTaskModal.show();
+                });
+
+                div.querySelector('.delete-btn').addEventListener('click', function () {
+                    div.remove();
+                    showToast('Task deleted successfully!', 'danger');
+                    updateTaskCounts();
+                    updateChart();
+                    updateTimers();
+                    filterTasks(currentFilter);
+                });
+
+                select.addEventListener('change', function () {
+                    const status = this.value;
+                    const previous = this.dataset.previous || 'pending';
+                    if (status === 'finished' && previous !== 'finished') {
+                        history.push({ date: '2025-08-10', type: 'finish' });
+                        saveHistory();
+                    }
+                    this.dataset.previous = status;
+                    showToast(`Task marked as ${status.charAt(0).toUpperCase() + status.slice(1)}!`, 'success');
+                    updateTaskCounts();
+                    updateChart();
+                    updateTimers();
+                    filterTasks(currentFilter);
+                });
+            }
+        });
+
+        // Handle edit form submission
+        document.getElementById('editTaskForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const taskText = document.getElementById('editTodoInput').value.trim();
+            const priority = document.getElementById('editPriorityInput').value;
+            const dueDate = document.getElementById('editDueDateInput').value;
+            const enableTime = document.getElementById('editEnableTimeInput').checked;
+            const dueTime = enableTime ? document.getElementById('editDueTimeInput').value : '';
+
+            if (taskText && dueDate && /^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+                const card = editTaskModalEl.dataset.card;
+                if (card) {
+                    const taskSpan = card.querySelector('.card-body span');
+                    const badge = card.querySelector('.card-footer span.badge');
+                    taskSpan.textContent = taskText;
+                    badge.textContent = priority.charAt(0).toUpperCase() + priority.slice(1);
+                    badge.className = `badge ${getPriorityBadgeClass(priority)}`;
+                    card.querySelector('.card-footer span.text-muted').innerHTML = formatDueDateTime(dueDate, dueTime);
+                    showToast('Task edited successfully!', 'success');
+                    updateTaskCounts();
+                    updateChart();
+                    updateTimers();
+                    filterTasks(currentFilter);
+                    editTaskModal.hide();
+                }
+            }
+        });
+
+        // Handle existing edit buttons
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const card = this.closest('.card');
+                const taskSpan = card.querySelector('.card-body span');
+                const currentPriority = card.querySelector('.card-footer span.badge').textContent.toLowerCase();
+                const currentDueText = card.querySelector('.card-footer span.text-muted').innerHTML;
+                const match = currentDueText.match(/<i>Due Date:<\/i> (\d{4}-\d{2}-\d{2})(?: <br\/> <i>By Time:<\/i> (\d{1,2}:\d{2} [AP]M))?/);
+                const currentDueDate = match[1];
+                const currentDueTime = match[2] ? parse12HourTo24Hour(match[2]) : '';
+
+                // Populate modal fields
+                document.getElementById('editTodoInput').value = taskSpan.textContent;
+                document.getElementById('editPriorityInput').value = currentPriority;
+                document.getElementById('editDueDateInput').value = currentDueDate;
+                document.getElementById('editEnableTimeInput').checked = !!currentDueTime;
+                document.getElementById('editDueTimeInput').value = currentDueTime || '';
+                document.getElementById('editDueTimeInput').disabled = !currentDueTime;
+
+                // Store reference to the card being edited
+                editTaskModalEl.dataset.card = card;
+
+                // Show the modal
+                editTaskModal.show();
+            });
+        });
+
+        // Clear modal fields when hidden
+        editTaskModalEl.addEventListener('hidden.bs.modal', function () {
+            document.getElementById('editTodoInput').value = '';
+            document.getElementById('editPriorityInput').value = 'low';
+            document.getElementById('editDueDateInput').value = '';
+            document.getElementById('editEnableTimeInput').checked = false;
+            document.getElementById('editDueTimeInput').value = '';
+            document.getElementById('editDueTimeInput').disabled = true;
+            delete editTaskModalEl.dataset.card;
+        });
+
+        // Handle existing delete buttons
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                this.closest('.card').remove();
+                showToast('Task deleted successfully!', 'danger');
+                updateTaskCounts();
+                updateChart();
+                updateTimers();
+                filterTasks(currentFilter);
+            });
+        });
+
+        // Handle existing status dropdowns
+        document.querySelectorAll('.status-select').forEach(select => {
+            select.dataset.previous = 'pending';
+            select.addEventListener('change', function () {
+                const status = this.value;
+                const previous = this.dataset.previous || 'pending';
+                if (status === 'finished' && previous !== 'finished') {
+                    history.push({ date: '2025-08-10', type: 'finish' });
+                    saveHistory();
+                }
+                this.dataset.previous = status;
+                showToast(`Task marked as ${status.charAt(0).toUpperCase() + status.slice(1)}!`, 'success');
+                updateTaskCounts();
+                updateChart();
+                updateTimers();
+                filterTasks(currentFilter);
+            });
+        });
+
+        // Initial update
+        updateTaskCounts();
+        updateChart();
+        updateTimers();
+        filterTasks('all');
+
+        // Update timers every minute
+        setInterval(updateTimers, 60000);
+    </script> -->
+</body>
+
+</html>
