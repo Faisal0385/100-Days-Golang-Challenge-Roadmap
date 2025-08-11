@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Coffee Beans</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f1e9;
+        }
+
+        .hero-section {
+            background: url('https://images.unsplash.com/photo-1494314671908-1f2c7c1000b3?auto=format&fit=crop&w=1920&q=80') no-repeat center center;
+            background-size: cover;
+            height: 100vh;
+            color: white;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-overlay {
+            background: linear-gradient(135deg, rgba(139, 94, 60, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .navbar {
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 3;
+        }
+
+        .product-card {
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: scale(1.05);
+        }
+
+        .cta-button {
+            background-color: #8b5e3c;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .cta-button:hover {
+            background-color: #6b4e31;
+            color: white;
+        }
+
+        .add-to-cart-button {
+            background-color: #8b5e3c;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            color: white;
+        }
+
+        .add-to-cart-button:hover {
+            background-color: #6b4e31;
+            color: white;
+        }
+
+        .cart-item {
+            border-bottom: 1px solid #dee2e6;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .cart-section {
+            padding: 40px 0;
+        }
+
+        .cart-title {
+            width: 100%;
+            background-color: #8b5e3c;
+            color: white;
+            padding: 15px 0;
+            /* margin-bottom: 30px; */
+            text-align: center;
+            /* border-radius: 8px; */
+        }
+
+        .cart-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+
+        .cart-summary {
+            /* max-width: 360px; */
+            background: #fff;
+            padding: 24px 32px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+
+        .cart-summary h4 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .cart-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-row:last-child {
+            border-bottom: none;
+            padding-top: 16px;
+        }
+
+        #cart-subtotal,
+        #cart-shipping {
+            font-weight: 500;
+            font-size: 1rem;
+            color: #555;
+        }
+
+        #cart-total {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #8b5e3c;
+            /* modern blue accent */
+        }
+
+        .shipment-info,
+        .payment-info {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .quantity-input {
+            width: 80px;
+        }
+
+        .remove-button {
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .remove-button:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .cart-item-details {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .shipping-form {
+            margin-top: 30px;
+        }
+
+        .discount-price {
+            color: #6c757d;
+            text-decoration: line-through;
+            margin-left: 10px;
+        }
+
+        .price-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .cart-summary {
+            margin-top: 20px;
+        }
+
+        .social-icons a {
+            color: white;
+            font-size: 1.5rem;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+
+        .social-icons a:hover {
+            color: #8b5e3c;
+        }
+
+        .video-section {
+            margin-top: 30px;
+        }
+
+        .video-section iframe {
+            width: 100%;
+            max-width: 560px;
+            height: 315px;
+            border-radius: 8px;
+        }
+
+        .review-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .review-item {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .review-stars {
+            color: #ffc107;
+        }
+
+        .faq-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-breadcrumb {
+            background: linear-gradient(135deg, rgba(139, 94, 60, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
+        }
+
+        .breadcrumb a {
+            color: #725234;
+            /* Coffee brown for links */
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb-item.active {
+            color: #4e3a27;
+            /* Darker brown for active */
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">BeanBliss</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#products">Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#payment">Payment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#faq">FAQ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#reviews">Reviews</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <br><br>
+
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="nav-breadcrumb py-2">
+        <div class="container">
+            <ol class="breadcrumb m-5">
+                <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Add Product</li>
+            </ol>
+        </div>
+    </nav>
+
+
+    <div class="container mt-5">
+        <h2 class="mb-4">Add Product</h2>
+
+        <!-- Product Form -->
+        <form action="/submit-product" method="POST" enctype="multipart/form-data" class="p-3 border rounded">
+            <!-- Product Name -->
+            <div class="mb-3">
+                <label for="productName" class="form-label">Product Name</label>
+                <input type="text" class="form-control" id="productName" name="productName"
+                    placeholder="Enter product name">
+            </div>
+
+            <!-- Description -->
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3"
+                    placeholder="Enter product description"></textarea>
+            </div>
+
+            <!-- Brand & Category in One Row -->
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <label for="brand" class="form-label">Brand</label>
+                    <input type="text" class="form-control" id="brand" name="brand" placeholder="Enter brand name">
+                </div>
+                <div class="mb-3 col-md-6">
+                    <label for="category" class="form-label">Category</label>
+                    <input type="text" class="form-control" id="category" name="category" placeholder="Enter category">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="mb-3 col-md-6">
+                    <!-- Price -->
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Price (BDT)</label>
+                        <input type="number" step="0.01" class="form-control" id="price" name="price"
+                            placeholder="Enter price">
+                    </div>
+                </div>
+                <div class="mb-3 col-md-6">
+                    <!-- Discount Price -->
+                    <div class="mb-3">
+                        <label for="discountPrice" class="form-label">Discount Price (BDT)</label>
+                        <input type="number" step="0.01" class="form-control" id="discountPrice" name="discountPrice"
+                            placeholder="Enter Discount price">
+                    </div>
+                </div>
+                <div class="mb-3 col-md-6">
+                    <!-- Rating -->
+                    <div class="mb-3">
+                        <label for="rating" class="form-label">Rating (out of 5)</label>
+                        <input type="number" step="0.1" min="1" max="5" class="form-control" id="rating" name="rating"
+                            placeholder="Enter rating">
+                    </div>
+                </div>
+                <div class="mb-3 col-md-6">
+                    <!-- Quantity -->
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Stock Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1"
+                            placeholder="Enter stock quantity">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Upload -->
+            <div class="mb-3">
+                <label for="image" class="form-label">Product Image</label>
+                <input type="file" class="form-control" id="image" name="image">
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn text-white" style="background-color: #4e3a27;">Submit</button>
+        </form>
+
+
+        <hr><br>
+        <!-- Existing Product -->
+        <h4 class="mb-4">All Customer Reviews</h4>
+        <div class="mb-4 border-bottom pb-3">
+            <strong>Ayesha Rahman</strong>
+            <p class="mb-1 text-muted">"The Ethiopian Yirgacheffe is amazing! The floral notes really come through in my
+                morning pour-over. Fast shipping too!"</p>
+        </div>
+    </div>
+
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center">
+            <p>&copy; 2025 BeanBliss. All rights reserved.</p>
+            <div>
+                <a href="#" class="text-white me-3">Privacy Policy</a>
+                <a href="#" class="text-white">Terms of Service</a>
+            </div>
+            <div class="social-icons mt-3">
+                <a href="https://facebook.com" target="_blank"><i class="bi bi-facebook"></i></a>
+                <a href="https://twitter.com" target="_blank"><i class="bi bi-twitter"></i></a>
+                <a href="https://instagram.com" target="_blank"><i class="bi bi-instagram"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Smooth scrolling for nav links
+        document.querySelectorAll('a.nav-link').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                window.scrollTo({
+                    top: targetElement.offsetTop - 70,
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Update cart total when quantity changes
+        document.querySelectorAll('.quantity-input').forEach(input => {
+            input.addEventListener('input', function () {
+                const price = parseFloat(this.getAttribute('data-price'));
+                const quantity = parseInt(this.value) || 1;
+                const itemTotal = (price * quantity).toFixed(2);
+                const discountTotal = (price * 0.9 * quantity).toFixed(2); // Assuming 10% discount
+                this.closest('.cart-item').querySelector('.item-total').textContent = `$${itemTotal}`;
+                this.closest('.cart-item').querySelector('.discount-price').textContent = `$${discountTotal}`;
+                updateCartTotal();
+            });
+        });
+
+        // Remove item from cart
+        document.querySelectorAll('.remove-button').forEach(button => {
+            button.addEventListener('click', function () {
+                this.closest('.cart-item').remove();
+                updateCartTotal();
+            });
+        });
+
+        // Update shipping cost based on city selection
+        document.getElementById('city').addEventListener('change', function () {
+            updateCartTotal();
+        });
+
+        // Calculate and update cart summary
+        function updateCartTotal() {
+            let subtotal = 0;
+            document.querySelectorAll('.cart-item').forEach(item => {
+                const price = parseFloat(item.querySelector('.quantity-input').getAttribute('data-price'));
+                const quantity = parseInt(item.querySelector('.quantity-input').value) || 1;
+                subtotal += price * quantity;
+            });
+            const city = document.getElementById('city').value;
+            const shipping = city === 'inside_ctg' ? 9.99 : city === 'outside_ctg' ? 14.99 : 9.99; // Default to $9.99 if no city selected
+            const total = (subtotal + shipping).toFixed(2);
+            subtotal = subtotal.toFixed(2);
+            document.getElementById('cart-subtotal').textContent = `$${subtotal}`;
+            document.getElementById('cart-shipping').textContent = `$${shipping.toFixed(2)}`;
+            document.getElementById('cart-total').textContent = `$${total}`;
+        }
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const paymentRadios = document.querySelectorAll('input[name="paymentMethod"]');
+            const bkashFields = document.getElementById("bkashFields");
+            const nagadFields = document.getElementById("nagadFields");
+
+            function togglePaymentFields() {
+                const selected = document.querySelector('input[name="paymentMethod"]:checked').value;
+                if (selected === "bkash") {
+                    bkashFields.style.display = "block";
+                    nagadFields.style.display = "none";
+                } else if (selected === "nagad") {
+                    bkashFields.style.display = "none";
+                    nagadFields.style.display = "block";
+                } else {
+                    bkashFields.style.display = "none";
+                    nagadFields.style.display = "none";
+                }
+            }
+
+            togglePaymentFields(); // initial run
+
+            paymentRadios.forEach(radio => radio.addEventListener("change", togglePaymentFields));
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,924 @@
+<script type="text/javascript">
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+        return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                    headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+    }
+</script>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Coffee Beans</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f1e9;
+        }
+
+        .hero-section {
+            background: url('https://images.unsplash.com/photo-1494314671908-1f2c7c1000b3?auto=format&fit=crop&w=1920&q=80') no-repeat center center;
+            background-size: cover;
+            height: 100vh;
+            color: white;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-overlay {
+            background: linear-gradient(135deg, rgba(139, 94, 60, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .navbar {
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 3;
+        }
+
+        .product-card {
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: scale(1.05);
+        }
+
+        .cta-button {
+            background-color: #8b5e3c;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .cta-button:hover {
+            background-color: #6b4e31;
+            color: white;
+        }
+
+        .add-to-cart-button {
+            background-color: #8b5e3c;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            color: white;
+        }
+
+        .add-to-cart-button:hover {
+            background-color: #6b4e31;
+            color: white;
+        }
+
+        .cart-item {
+            border-bottom: 1px solid #dee2e6;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .cart-section {
+            padding: 40px 0;
+        }
+
+        .cart-title {
+            width: 100%;
+            background-color: #8b5e3c;
+            color: white;
+            padding: 15px 0;
+            /* margin-bottom: 30px; */
+            text-align: center;
+            /* border-radius: 8px; */
+        }
+
+        .cart-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+
+        .cart-summary {
+            /* max-width: 360px; */
+            background: #fff;
+            padding: 24px 32px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+
+        .cart-summary h4 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .cart-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-row:last-child {
+            border-bottom: none;
+            padding-top: 16px;
+        }
+
+        #cart-subtotal,
+        #cart-shipping {
+            font-weight: 500;
+            font-size: 1rem;
+            color: #555;
+        }
+
+        #cart-total {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #8b5e3c;
+            /* modern blue accent */
+        }
+
+        .shipment-info,
+        .payment-info {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .quantity-input {
+            width: 80px;
+        }
+
+        .remove-button {
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .remove-button:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .cart-item-details {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .shipping-form {
+            margin-top: 30px;
+        }
+
+        .discount-price {
+            color: #6c757d;
+            text-decoration: line-through;
+            margin-left: 10px;
+        }
+
+        .price-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .cart-summary {
+            margin-top: 20px;
+        }
+
+        .social-icons a {
+            color: white;
+            font-size: 1.5rem;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+
+        .social-icons a:hover {
+            color: #8b5e3c;
+        }
+
+        .video-section {
+            margin-top: 30px;
+        }
+
+        .video-section iframe {
+            width: 100%;
+            max-width: 560px;
+            height: 315px;
+            border-radius: 8px;
+        }
+
+        .review-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .review-item {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .review-stars {
+            color: #ffc107;
+        }
+
+        .faq-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">BeanBliss</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#products">Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#payment">Payment</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#faq">FAQ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#reviews">Reviews</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="container hero-content">
+            <h1 class="display-3 fw-bold mb-3">Discover Premium Coffee Beans</h1>
+            <p class="lead mb-4">Sourced from the finest regions, crafted for the ultimate coffee experience.</p>
+            <a href="#products" class="btn cta-button">Shop Now</a>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">Our Coffee Collections</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card product-card border-0 shadow-sm">
+                        <img src="https://www.coffee-fellows.com/_next/image?url=https%3A%2F%2Fimages.prismic.io%2Fcoffeefellows-website%2F31d8561b-0dbf-4b8a-bd0d-2b8d6a7964a8_Header_Kaffee_Espresso_Bohnen_sehr_dunkel.jpg%3Fauto%3Dcompress%2Cformat&w=3840&q=75"
+                            class="card-img-top" alt="Ethiopian Yirgacheffe">
+                        <div class="card-body">
+                            <h5 class="card-title">Ethiopian Yirgacheffe</h5>
+                            <p class="card-text">Brand</p>
+                            <p class="fw-bold">$18.99 / lb</p>
+                            <a href="#" class="btn add-to-cart-button">Add to Cart</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card product-card border-0 shadow-sm">
+                        <img src="https://www.coffee-fellows.com/_next/image?url=https%3A%2F%2Fimages.prismic.io%2Fcoffeefellows-website%2F31d8561b-0dbf-4b8a-bd0d-2b8d6a7964a8_Header_Kaffee_Espresso_Bohnen_sehr_dunkel.jpg%3Fauto%3Dcompress%2Cformat&w=3840&q=75"
+                            class="card-img-top" alt="Colombian Supremo">
+                        <div class="card-body">
+                            <h5 class="card-title">Colombian Supremo</h5>
+                            <p class="card-text">Brand</p>
+                            <p class="fw-bold">$16.99 / lb</p>
+                            <a href="#" class="btn add-to-cart-button">Add to Cart</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card product-card border-0 shadow-sm">
+                        <img src="https://www.coffee-fellows.com/_next/image?url=https%3A%2F%2Fimages.prismic.io%2Fcoffeefellows-website%2F31d8561b-0dbf-4b8a-bd0d-2b8d6a7964a8_Header_Kaffee_Espresso_Bohnen_sehr_dunkel.jpg%3Fauto%3Dcompress%2Cformat&w=3840&q=75"
+                            class="card-img-top" alt="Sumatra Mandheling">
+                        <div class="card-body">
+                            <h5 class="card-title">Sumatra Mandheling</h5>
+                            <p class="card-text">Brand</p>
+                            <p class="fw-bold">$19.99 / lb</p>
+                            <a href="#" class="btn add-to-cart-button">Add to Cart</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">About BeanBliss</h2>
+            <div class="row">
+                <div class="col-md-12">
+                    <p>At BeanBliss, we are passionate about bringing you the finest coffee beans from around the world.
+                        Our beans are ethically sourced, roasted to perfection, and delivered fresh to your door.</p>
+                    <p>Every batch is carefully selected to ensure unparalleled quality and flavor, making your coffee
+                        moments truly exceptional.</p>
+                    <div class="video-section text-center">
+                        <h4>Our Coffee Journey</h4>
+                        <iframe src="https://www.youtube.com/embed/6zN0Z3m6Zis" title="Coffee Journey" frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section id="product-details" class="py-5">
+        <div class="container">
+            <div class="row g-4 align-items-center">
+                <!-- Product Image -->
+                <div class="col-md-6 text-center">
+                    <img src="https://images.unsplash.com/photo-1506619216599-9d16d0903dfd?q=80&w=1169&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                        alt="Product Image" class="img-fluid rounded shadow"
+                        style="max-height: 400px; object-fit: contain;" />
+                </div>
+
+                <!-- Product Info -->
+                <div class="col-md-6">
+                    <h2 class="mb-3">Premium Ethiopian Yirgacheffe Coffee Beans</h2>
+
+                    <!-- Brand & Category -->
+                    <p class="mb-2">
+                        <strong>Brand:</strong> Coffee Fellows<br />
+                        <strong>Category:</strong> Coffee Beans
+                    </p>
+
+                    <!-- Ratings -->
+                    <div class="mb-3">
+                        <span class="text-warning me-2">
+                            ⭐⭐⭐⭐☆ (4.2/5)
+                        </span>
+                        <small class="text-muted">(123 reviews)</small>
+                    </div>
+
+                    <p class="text-muted mb-4">
+                        Experience the exquisite aroma and rich flavor of our Ethiopian Yirgacheffe coffee beans,
+                        freshly roasted and ethically sourced.
+                    </p>
+
+                    <!-- Price -->
+                    <div class="mb-3">
+                        <span class="h4 fw-bold text-danger me-3">$16.99</span>
+                        <span class="text-muted text-decoration-line-through">$18.99</span>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div class="mb-4 d-flex align-items-center">
+                        <label for="quantity" class="form-label me-3 mb-0">Quantity:</label>
+                        <input type="number" id="quantity" class="form-control" style="width: 100px;" min="1"
+                            value="1" />
+                    </div>
+
+                    <!-- Add to Cart Button with custom color -->
+                    <button class="btn btn-lg mb-4 w-100"
+                        style="background-color: #725234; color: white; border: none;">
+                        Add to Cart
+                    </button>
+
+                    <h5>Key Features:</h5>
+                    <ul class="list-unstyled">
+                        <li>✔️ Single-origin Arabica beans</li>
+                        <li>✔️ Medium roast for balanced flavor</li>
+                        <li>✔️ Notes of citrus and floral aroma</li>
+                        <li>✔️ Ethically sourced and fair trade</li>
+                        <li>✔️ Whole beans, freshly packed</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shipping and Payment Sections -->
+    <section id="shipping-payment" class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <!-- Shipping Information -->
+                <div class="col-md-6 mb-4">
+                    <h2 class="text-center mb-5 fw-bold">Shipping Information</h2>
+                    <div class="shipment-info p-4 bg-white rounded shadow-sm">
+                        <h4 class="mb-3 text-primary">Fast & Reliable Shipping</h4>
+                        <p>We offer free standard shipping on orders over <strong>$50</strong>. Enjoy express shipping
+                            options for faster delivery.</p>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-truck me-2 text-success"></i>
+                                <strong>Standard Shipping:</strong> 5-7 business days, free on orders over $50.
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-lightning-charge me-2 text-warning"></i>
+                                <strong>Express Shipping:</strong> 2-3 business days, $9.99 flat rate.
+                            </li>
+                            <li>
+                                <i class="bi bi-globe me-2 text-info"></i>
+                                <strong>International Shipping:</strong> Available to select countries, rates vary.
+                            </li>
+                        </ul>
+                        <p class="mt-3 mb-0 fst-italic text-muted">All orders are shipped fresh to ensure maximum flavor
+                            and quality.</p>
+                    </div>
+                </div>
+
+                <!-- Payment Account Info -->
+                <div class="col-md-6 mb-4">
+                    <h2 class="text-center mb-5 fw-bold">Payment Account Info</h2>
+                    <div class="payment-info p-4 bg-white rounded shadow-sm">
+                        <h4 class="mb-3 text-primary">Make Payments Easily</h4>
+                        <p>We accept payments through <strong>bKash</strong> and <strong>Nagad</strong> for your
+                            convenience. Please use the following account numbers to complete your payment.</p>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-phone me-2 text-danger"></i>
+                                <strong>bKash:</strong> +880-1234-567890
+                            </li>
+                            <li>
+                                <i class="bi bi-phone me-2 text-danger"></i>
+                                <strong>Nagad:</strong> +880-9876-543210
+                            </li>
+                        </ul>
+                        <p class="mt-3 mb-0 fst-italic text-muted">After making the payment, please provide the
+                            transaction ID in the shipping form below.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12 p-0 h-100">
+                    <h2 class="cart-title px-2">Please fill out the form below to place your order.</h2>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cart Section -->
+    <section id="payment" class="cart-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <!-- Cart Items -->
+                    <div class="cart-item d-flex">
+                        <img src="https://www.coffee-fellows.com/_next/image?url=https%3A%2F%2Fimages.prismic.io%2Fcoffeefellows-website%2F31d8561b-0dbf-4b8a-bd0d-2b8d6a7964a8_Header_Kaffee_Espresso_Bohnen_sehr_dunkel.jpg%3Fauto%3Dcompress%2Cformat&w=3840&q=75"
+                            alt="Ethiopian Yirgacheffe" />
+                        <div class="flex-grow-1 ms-3">
+                            <h5>Ethiopian Yirgacheffe</h5>
+                            <div class="price-container">
+                                <p class="fw-bold mb-1 item-total">$18.99</p>
+                                <p class="discount-price mb-1">$16.99</p>
+                            </div>
+                            <div class="cart-item-details">
+                                <div class="d-flex align-items-center">
+                                    <label for="qty1" class="me-2">Qty:</label>
+                                    <input type="number" id="qty1" class="form-control quantity-input" value="1" min="1"
+                                        data-price="18.99" />
+                                </div>
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-outline-danger remove-button btn-sm">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cart-item d-flex">
+                        <img src="https://www.coffee-fellows.com/_next/image?url=https%3A%2F%2Fimages.prismic.io%2Fcoffeefellows-website%2F31d8561b-0dbf-4b8a-bd0d-2b8d6a7964a8_Header_Kaffee_Espresso_Bohnen_sehr_dunkel.jpg%3Fauto%3Dcompress%2Cformat&w=3840&q=75"
+                            alt="Colombian Supremo" />
+                        <div class="flex-grow-1 ms-3">
+                            <h5>Colombian Supremo</h5>
+                            <div class="price-container">
+                                <p class="fw-bold mb-1 item-total">$33.98</p>
+                                <p class="discount-price mb-1">$29.98</p>
+                            </div>
+                            <div class="cart-item-details">
+                                <div class="d-flex align-items-center">
+                                    <label for="qty2" class="me-2">Qty:</label>
+                                    <input type="number" id="qty2" class="form-control quantity-input" value="2" min="1"
+                                        data-price="16.99" />
+                                </div>
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-outline-danger remove-button btn-sm">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipping Form -->
+                    <div class="shipping-form card p-3">
+                        <h4 class="mt-4">Enter Shipping Details</h4>
+                        <hr>
+                        <form>
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label for="fullName" class="form-label">Full Name <span
+                                            class="text-danger">*</span> </label>
+                                    <input type="text" class="form-control" id="fullName"
+                                        placeholder="Enter your full name" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="phoneNumber" class="form-label">Phone Number <span
+                                            class="text-danger">*</span> </label>
+                                    <input type="tel" class="form-control" id="phoneNumber"
+                                        placeholder="Enter your phone number" />
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Address <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="address" placeholder="Enter your address" />
+                            </div>
+                            <div class="mb-3">
+                                <label for="city" class="form-label">Shipping Zone <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="city">
+                                    <option value="" disabled selected>Select city</option>
+                                    <option value="inside_ctg">Inside Chittagong</option>
+                                    <option value="outside_ctg">Outside Chittagong</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label d-block">Payment Method</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="paymentCOD"
+                                        value="COD" checked />
+                                    <label class="form-check-label" for="paymentCOD">Cash On Delivery</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="paymentBkash"
+                                        value="bkash" />
+                                    <label class="form-check-label" for="paymentBkash">bKash</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="paymentMethod" id="paymentNagad"
+                                        value="nagad" />
+                                    <label class="form-check-label" for="paymentNagad">Nagad</label>
+                                </div>
+                            </div>
+
+                            <div id="paymentFields">
+                                <!-- bKash payment details -->
+                                <div id="bkashFields" class="payment-method-fields px-3" style="display:none;">
+                                    <div class="row mb-3">
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="phoneNumberBkash" class="form-label">bKash Phone
+                                                    Number (+880-1234-567890)</label>
+                                                <input type="tel" class="form-control" id="phoneNumberBkash"
+                                                    placeholder="Enter your bKash phone number" />
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="trdxNoBkash" class="form-label">bKash Transaction ID</label>
+                                                <input type="text" class="form-control" id="trdxNoBkash"
+                                                    placeholder="Enter your bKash transaction ID" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Nagad payment details -->
+                                <div id="nagadFields" class="payment-method-fields px-3" style="display:none;">
+                                    <div class="row mb-3">
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="phoneNumberNagad" class="form-label">Nagad Phone
+                                                    Number (+880-9876-543210)</label>
+                                                <input type="tel" class="form-control" id="phoneNumberNagad"
+                                                    placeholder="Enter your Nagad phone number" />
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="mb-3">
+                                                <label for="trdxNoNagad" class="form-label">Nagad Transaction ID</label>
+                                                <input type="text" class="form-control" id="trdxNoNagad"
+                                                    placeholder="Enter your Nagad transaction ID" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="cart-summary">
+                                <div class="cart-row d-flex justify-content-between">
+                                    <h4>Subtotal</h4>
+                                    <h4 id="cart-subtotal">$52.97</h4>
+                                </div>
+                                <div class="cart-row d-flex justify-content-between">
+                                    <h4>Shipping Cost</h4>
+                                    <h4 id="cart-shipping">$9.99</h4>
+                                </div>
+                                <div class="cart-row d-flex justify-content-between fw-bold fs-5">
+                                    <h4>Total</h4>
+                                    <h4 id="cart-total">$62.96</h4>
+                                </div>
+                            </div>
+                        
+
+                        <div class="text-center mt-4">
+                            <a href="#" class="btn cta-button w-100">Place Order</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">Frequently Asked Questions</h2>
+            <div class="row">
+                <div class="col-md-8 mx-auto faq-section">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqHeading1">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#faqCollapse1" aria-expanded="true" aria-controls="faqCollapse1">
+                                    Where do you source your coffee beans?
+                                </button>
+                            </h2>
+                            <div id="faqCollapse1" class="accordion-collapse collapse show"
+                                aria-labelledby="faqHeading1" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Our coffee beans are ethically sourced from premier coffee-growing regions,
+                                    including Ethiopia, Colombia, and Sumatra. We work directly with farmers to ensure
+                                    sustainable practices and top-quality beans.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqHeading2">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#faqCollapse2" aria-expanded="false" aria-controls="faqCollapse2">
+                                    What are your shipping options?
+                                </button>
+                            </h2>
+                            <div id="faqCollapse2" class="accordion-collapse collapse" aria-labelledby="faqHeading2"
+                                data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    We offer free standard shipping (5-7 business days) on orders over $50, express
+                                    shipping (2-3 business days) for $9.99, and international shipping to select
+                                    countries with varying rates.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqHeading3">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#faqCollapse3" aria-expanded="false" aria-controls="faqCollapse3">
+                                    What is your return policy?
+                                </button>
+                            </h2>
+                            <div id="faqCollapse3" class="accordion-collapse collapse" aria-labelledby="faqHeading3"
+                                data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    If you're not satisfied with your purchase, you can return unopened products within
+                                    30 days for a full refund. Contact our support team to initiate a return.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Customer Reviews Section -->
+    <section id="reviews" class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">Customer Reviews</h2>
+            <div class="row">
+                <div class="col-md-8 mx-auto review-section">
+                    <div class="review-item">
+                        <h5>Ayesha Rahman</h5>
+                        <div class="review-stars">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star"></i>
+                        </div>
+                        <p>"The Ethiopian Yirgacheffe is amazing! The floral notes really come through in my morning
+                            pour-over. Fast shipping too!"</p>
+                    </div>
+                    <div class="review-item">
+                        <h5>Mohammad Khan</h5>
+                        <div class="review-stars">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <p>"Best coffee beans I've ever tried. The Colombian Supremo has a rich flavor that makes my
+                            espresso perfect every time."</p>
+                    </div>
+                    <div class="review-item">
+                        <h5>Sadia Islam</h5>
+                        <div class="review-stars">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-half"></i>
+                            <i class="bi bi-star"></i>
+                        </div>
+                        <p>"Really love the quality of the beans, though I wish there were more variety in the
+                            selection. Still, great experience!"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center">
+            <p>&copy; 2025 BeanBliss. All rights reserved.</p>
+            <div>
+                <a href="#" class="text-white me-3">Privacy Policy</a>
+                <a href="#" class="text-white">Terms of Service</a>
+            </div>
+            <div class="social-icons mt-3">
+                <a href="https://facebook.com" target="_blank"><i class="bi bi-facebook"></i></a>
+                <a href="https://twitter.com" target="_blank"><i class="bi bi-twitter"></i></a>
+                <a href="https://instagram.com" target="_blank"><i class="bi bi-instagram"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Smooth scrolling for nav links
+        document.querySelectorAll('a.nav-link').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                window.scrollTo({
+                    top: targetElement.offsetTop - 70,
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Update cart total when quantity changes
+        document.querySelectorAll('.quantity-input').forEach(input => {
+            input.addEventListener('input', function () {
+                const price = parseFloat(this.getAttribute('data-price'));
+                const quantity = parseInt(this.value) || 1;
+                const itemTotal = (price * quantity).toFixed(2);
+                const discountTotal = (price * 0.9 * quantity).toFixed(2); // Assuming 10% discount
+                this.closest('.cart-item').querySelector('.item-total').textContent = `$${itemTotal}`;
+                this.closest('.cart-item').querySelector('.discount-price').textContent = `$${discountTotal}`;
+                updateCartTotal();
+            });
+        });
+
+        // Remove item from cart
+        document.querySelectorAll('.remove-button').forEach(button => {
+            button.addEventListener('click', function () {
+                this.closest('.cart-item').remove();
+                updateCartTotal();
+            });
+        });
+
+        // Update shipping cost based on city selection
+        document.getElementById('city').addEventListener('change', function () {
+            updateCartTotal();
+        });
+
+        // Calculate and update cart summary
+        function updateCartTotal() {
+            let subtotal = 0;
+            document.querySelectorAll('.cart-item').forEach(item => {
+                const price = parseFloat(item.querySelector('.quantity-input').getAttribute('data-price'));
+                const quantity = parseInt(item.querySelector('.quantity-input').value) || 1;
+                subtotal += price * quantity;
+            });
+            const city = document.getElementById('city').value;
+            const shipping = city === 'inside_ctg' ? 9.99 : city === 'outside_ctg' ? 14.99 : 9.99; // Default to $9.99 if no city selected
+            const total = (subtotal + shipping).toFixed(2);
+            subtotal = subtotal.toFixed(2);
+            document.getElementById('cart-subtotal').textContent = `$${subtotal}`;
+            document.getElementById('cart-shipping').textContent = `$${shipping.toFixed(2)}`;
+            document.getElementById('cart-total').textContent = `$${total}`;
+        }
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const paymentRadios = document.querySelectorAll('input[name="paymentMethod"]');
+            const bkashFields = document.getElementById("bkashFields");
+            const nagadFields = document.getElementById("nagadFields");
+
+            function togglePaymentFields() {
+                const selected = document.querySelector('input[name="paymentMethod"]:checked').value;
+                if (selected === "bkash") {
+                    bkashFields.style.display = "block";
+                    nagadFields.style.display = "none";
+                } else if (selected === "nagad") {
+                    bkashFields.style.display = "none";
+                    nagadFields.style.display = "block";
+                } else {
+                    bkashFields.style.display = "none";
+                    nagadFields.style.display = "none";
+                }
+            }
+
+            togglePaymentFields(); // initial run
+
+            paymentRadios.forEach(radio => radio.addEventListener("change", togglePaymentFields));
+        });
+    </script>
+
+</body>
+
+</html>
